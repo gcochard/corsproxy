@@ -4,8 +4,9 @@ import (
         "log"
         "net/http"
         "io/ioutil"
-        "appengine"
-        "appengine/urlfetch"
+        "google.golang.org/appengine"
+        "google.golang.org/appengine/urlfetch"
+	"golang.org/x/net/context"
 	"regexp"
 	"os"
 )
@@ -53,7 +54,7 @@ func writeCorsHeaders(w http.ResponseWriter, r *http.Request, resp *http.Respons
 	return
 }
 
-func fetchResp (ctx appengine.Context, url string) (*myResp, *myError) {
+func fetchResp (ctx context.Context, url string) (*myResp, *myError) {
 	client := urlfetch.Client(ctx)
 	resp, err := client.Get(url)
         if err != nil {

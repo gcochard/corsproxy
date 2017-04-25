@@ -1,17 +1,14 @@
 package corsproxy
-import (
-        "fmt"
-        "log"
-        "net/http"
-        "io/ioutil"
-	"regexp"
-	"os"
-	"corsproxy"
+import(
+	"testing"
+	"net/http"
 )
 
-func test_validateRequest() {
+func TestValidateRequest(t *testing.T) {
 	myErr := ValidateRequest(&http.Request{})
-	return nil
+	if myErr == nil {
+		t.Errorf("Error === %q, want nil", myErr)
+	}
 }
 
 /*
