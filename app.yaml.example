@@ -1,0 +1,8 @@
+runtime: go
+api_version: go1
+handlers:
+- url: /.*
+  script: _go_app
+
+env_variables:
+  ALLOWED_ORIGIN_REGEXP: '^https?:\\/\\/.*yourdomainpatternhere'
