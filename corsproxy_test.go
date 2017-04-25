@@ -1,46 +1,20 @@
-package cors
+package corsproxy
 import (
         "fmt"
         "log"
         "net/http"
         "io/ioutil"
-        "appengine"
-        "appengine/urlfetch"
 	"regexp"
 	"os"
+	"corsproxy"
 )
 
-type myError struct {
-	Code int
-	Message string
-}
-
-func (e myError) Error() string {
-	return e.Message
-}
-
-type myResp struct {
-	Code int
-	Body []byte
-	Header http.Header
-}
-
-func validateRequest(r *http.Request) *myError {
-	if r.Header.Get("Origin") == "" {
-		return &myError{http.StatusBadRequest, "Missing origin header"}
-	} else if r.URL.RawQuery == "" {
-		return &myError{http.StatusBadRequest, "Missing request query"}
-        } else if r.Method != "GET" {
-		return &myError{http.StatusBadRequest, "Cross domain request only supports GET"}
-	}
-	allowedOriginRe := os.Getenv("ALLOWED_ORIGIN_REGEXP")
-	matched, err := regexp.MatchString(allowedOriginRe, r.Header.Get("Origin"))
-	if err != nil || matched == false {
-		return &myError{http.StatusBadRequest, "origin mismatch"}
-	}
+func test_validateRequest() {
+	myErr := ValidateRequest(&http.Request{})
 	return nil
 }
 
+/*
 func writeCorsHeaders(w http.ResponseWriter, r *http.Request, resp *http.Response) {
         w.Header().Add("Access-Control-Allow-Origin", r.Header.Get("Origin"))
         w.Header().Add("Access-Control-Allow-Methods", "GET")
@@ -101,3 +75,4 @@ func handler(w http.ResponseWriter, r *http.Request) {
 func init() {
         http.HandleFunc("/", handler)
 }
+*/
