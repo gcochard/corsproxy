@@ -4,8 +4,8 @@ import (
         "log"
         "net/http"
         "io/ioutil"
-        "google.golang.org/appengine"
-        "google.golang.org/appengine/urlfetch"
+        "appengine"
+        "appengine/urlfetch"
 	"regexp"
 	"os"
 )
