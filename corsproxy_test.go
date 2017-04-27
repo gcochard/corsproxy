@@ -2,74 +2,70 @@ package corsproxy
 import(
 	"testing"
 	"net/http"
+	"net/http/httptest"
+	"reflect"
+	"os"
 )
 
 func TestValidateRequest(t *testing.T) {
-	myErr := ValidateRequest(&http.Request{})
+	r := httptest.NewRequest("GET", "http:/test.com/?https://what.the.what", nil)
+	os.Setenv("ALLOWED_ORIGIN_REGEXP", "^https?:\\/\\/.*you\\.com")
+	myErr := validateRequest(r)
 	if myErr == nil {
-		t.Errorf("Error === %q, want nil", myErr)
+		t.Errorf("Error == nil, expected error")
+	}
+	if myErr.Error() != "Missing origin header" {
+		t.Errorf("Error == %s, expected error %s", myErr.Error(), "Missing origin header")
+	}
+	r = httptest.NewRequest("GET", "http:/test.com/", nil)
+	r.Header.Set("Origin", "https://you.com")
+	myErr = validateRequest(r)
+	if myErr == nil {
+		t.Errorf("Error == nil, expected error")
+	}
+	if myErr.Error() != "Missing request query" {
+		t.Errorf("Error == %s, expected error %s", myErr.Error(), "Missing origin header")
+	}
+	r = httptest.NewRequest("POST", "http:/test.com/?https://what.the.what", nil)
+	r.Header.Set("Origin", "https://you.com")
+	myErr = validateRequest(r)
+	if myErr == nil {
+		t.Errorf("Error == nil, expected error")
+	}
+	if myErr.Error() != "Cross domain request only supports GET" {
+		t.Errorf("Error == %s, expected error %s", myErr.Error(), "Missing origin header")
+	}
+	r = httptest.NewRequest("GET", "http:/test.com/?https://what.the.what", nil)
+	r.Header.Set("Origin", "https://me.com")
+	myErr = validateRequest(r)
+	if myErr == nil {
+		t.Errorf("Error == nil, expected error")
+	}
+	if myErr.Error() != "origin mismatch" {
+		t.Errorf("Error == %s, expected error %s", myErr.Error(), "Missing origin header")
+	}
+	r = httptest.NewRequest("GET", "http:/test.com/?https://what.the.what", nil)
+	r.Header.Set("Origin", "https://you.com")
+	myErr = validateRequest(r)
+	if myErr != nil {
+		t.Errorf("Error: %s, expected nil", myErr.Error())
 	}
 }
 
-/*
-func writeCorsHeaders(w http.ResponseWriter, r *http.Request, resp *http.Response) {
-        w.Header().Add("Access-Control-Allow-Origin", r.Header.Get("Origin"))
-        w.Header().Add("Access-Control-Allow-Methods", "GET")
-        w.Header().Add("Access-Control-Max-Age", "86400")
-        for k, v := range resp.Header {
-                for _, s := range v {
-                        w.Header().Add(k, s)
-                }
-        }
-	return
-}
-
-func fetchResp (ctx appengine.Context, url string) (*myResp, *myError) {
-	client := urlfetch.Client(ctx)
-	resp, err := client.Get(url)
-        if err != nil {
-		status := http.StatusInternalServerError
-                if resp != nil && resp.StatusCode >= 100 {
-                        status = resp.StatusCode
-                }
-		return nil, &myError{status, fmt.Sprintf("Error: %s", err)}
-        }
-        defer resp.Body.Close()
-        body, err := ioutil.ReadAll(resp.Body)
-        if err != nil {
-		return nil, &myError{http.StatusInternalServerError, fmt.Sprintf("Error: %s", err)}
-        }
-	return &myResp{resp.StatusCode, body, resp.Header}, nil
-}
-
-func handler(w http.ResponseWriter, r *http.Request) {
-	myerr := validateRequest(r)
-	if myerr != nil {
-		http.Error(w, myerr.Message, myerr.Code)
-		return
+func TestWriteCorsHeaders(t *testing.T) {
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("GET", "http:/test.com/?https://what.the.what", nil)
+	rsp := http.Response{ "200 OK", 200, "HTTP/1.1", 1, 1, http.Header{}, nil, -1, nil, true, true, nil, nil, nil, }
+	rsp.Header.Set("a", "b")
+	r.Header.Set("Origin", "you")
+	expectedHeaders := http.Header{}
+	expectedHeaders.Set("A", "b")
+	expectedHeaders.Set("Access-Control-Allow-Origin", "you")
+	expectedHeaders.Set("Access-Control-Allow-Methods", "GET")
+	expectedHeaders.Set("Access-Control-Max-Age", "86400")
+	writeCorsHeaders(w, r, &rsp)
+	eq := reflect.DeepEqual(w.Header(), expectedHeaders)
+	if !eq {
+		t.Errorf("expected headers %q != actual headers %q", expectedHeaders, w.Header())
 	}
-        log.Printf("URL: %s", r.URL.RawQuery)
-        ctx := appengine.NewContext(r)
-        //client := urlfetch.Client(ctx)
-        //resp, err := client.Get(r.URL.RawQuery)
-	resp, myerr := fetchResp(ctx, r.URL.RawQuery)
-	if myerr != nil {
-		http.Error(w, myerr.Message, myerr.Code)
-		return
-	}
-        w.Header().Add("Access-Control-Allow-Origin", r.Header.Get("Origin"))
-        w.Header().Add("Access-Control-Allow-Methods", "GET")
-        w.Header().Add("Access-Control-Max-Age", "86400")
-        for k, v := range resp.Header {
-                for _, s := range v {
-                        w.Header().Add(k, s)
-                }
-        }
-        w.WriteHeader(resp.Code)
-        w.Write(resp.Body)
 }
-
-func init() {
-        http.HandleFunc("/", handler)
-}
-*/

@@ -26,7 +26,7 @@ type myResp struct {
 	Header http.Header
 }
 
-func ValidateRequest(r *http.Request) *myError {
+func validateRequest(r *http.Request) *myError {
 	if r.Header.Get("Origin") == "" {
 		return &myError{http.StatusBadRequest, "Missing origin header"}
 	} else if r.URL.RawQuery == "" {
@@ -73,7 +73,7 @@ func fetchResp (ctx context.Context, url string) (*myResp, *myError) {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	myerr := ValidateRequest(r)
+	myerr := validateRequest(r)
 	if myerr != nil {
 		http.Error(w, myerr.Message, myerr.Code)
 		return
