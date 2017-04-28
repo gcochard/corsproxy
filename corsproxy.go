@@ -55,16 +55,15 @@ func validateRequest(r *http.Request) (int, error) {
 	return 200, nil
 }
 
-func writeCorsHeaders(w http.ResponseWriter, r *http.Request, resp *http.Response) {
+func writeCorsHeaders(w http.ResponseWriter, r *http.Request, h http.Header) {
 	w.Header().Add("Access-Control-Allow-Origin", r.Header.Get("Origin"))
 	w.Header().Add("Access-Control-Allow-Methods", "GET")
 	w.Header().Add("Access-Control-Max-Age", "86400")
-	for k, v := range resp.Header {
+	for k, v := range h {
 		for _, s := range v {
 			w.Header().Add(k, s)
 		}
 	}
-	return
 }
 
 func fetchResp(ctx context.Context, url string) (*myResp, int, error) {
@@ -98,14 +97,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, myerr.Error(), status)
 		return
 	}
-	w.Header().Add("Access-Control-Allow-Origin", r.Header.Get("Origin"))
-	w.Header().Add("Access-Control-Allow-Methods", "GET")
-	w.Header().Add("Access-Control-Max-Age", "86400")
-	for k, v := range resp.Header {
-		for _, s := range v {
-			w.Header().Add(k, s)
-		}
-	}
+	writeCorsHeaders(w, r, resp.Header)
+
 	w.WriteHeader(resp.Code)
 	w.Write(resp.Body)
 }

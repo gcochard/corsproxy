@@ -84,13 +84,13 @@ func TestWriteCorsHeaders(t *testing.T) {
 	r := httptest.NewRequest("GET", "http:/test.com/?https://what.the.what", nil)
 	rsp := http.Response{"200 OK", 200, "HTTP/1.1", 1, 1, http.Header{}, nil, -1, nil, true, true, nil, nil, nil}
 	rsp.Header.Set("a", "b")
-	r.Header.Set("Origin", "you")
+	r.Header.Set("Origin", "http://you")
 	expectedHeaders := http.Header{}
 	expectedHeaders.Set("A", "b")
-	expectedHeaders.Set("Access-Control-Allow-Origin", "you")
+	expectedHeaders.Set("Access-Control-Allow-Origin", "http://you")
 	expectedHeaders.Set("Access-Control-Allow-Methods", "GET")
 	expectedHeaders.Set("Access-Control-Max-Age", "86400")
-	writeCorsHeaders(w, r, &rsp)
+	writeCorsHeaders(w, r, rsp.Header)
 	eq := reflect.DeepEqual(w.Header(), expectedHeaders)
 	if !eq {
 		t.Errorf("expected headers %q != actual headers %q", expectedHeaders, w.Header())
