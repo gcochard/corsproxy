@@ -9,6 +9,13 @@ import (
 )
 
 func TestValidateRequest(t *testing.T) {
+	const (
+		goodUrl     = "http:/test.com/?https://what.the.what"
+		badUrl      = "http:/test.com/"
+		goodOrigin  = "https://you.com"
+		badOrigin   = "https://me.com"
+		emptyOrigin = ""
+	)
 	os.Setenv("ALLOWED_ORIGIN_REGEXP", "^https?:\\/\\/.*you\\.com")
 	tests := []struct {
 		title  string
@@ -21,40 +28,40 @@ func TestValidateRequest(t *testing.T) {
 		{
 			"Test missing origin header",
 			"GET",
-			"http:/test.com/?https://what.the.what",
-			"",
+			goodUrl,
+			emptyOrigin,
 			errMissingOrigin,
 			http.StatusBadRequest,
 		},
 		{
 			"Test missing query string",
 			"GET",
-			"http:/test.com/",
-			"https://you.com",
+			badUrl,
+			goodOrigin,
 			errMissingQuery,
 			http.StatusBadRequest,
 		},
 		{
 			"Test wrong VERB",
 			"POST",
-			"http:/test.com/?https://what.the.what",
-			"https://you.com",
+			goodUrl,
+			goodOrigin,
 			errUnsupportedMethod,
 			http.StatusMethodNotAllowed,
 		},
 		{
 			"Test origin mismatch",
 			"GET",
-			"http:/test.com/?https://what.the.what",
-			"https://me.com",
+			goodUrl,
+			badOrigin,
 			errOriginMismatch,
 			http.StatusBadRequest,
 		},
 		{
 			"Test valid case",
 			"GET",
-			"http:/test.com/?https://what.the.what",
-			"https://you.com",
+			goodUrl,
+			goodOrigin,
 			nil,
 			http.StatusOK,
 		},
