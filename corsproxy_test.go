@@ -1,61 +1,81 @@
 package corsproxy
-import(
-	"testing"
+
+import (
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"os"
+	"reflect"
+	"testing"
 )
 
 func TestValidateRequest(t *testing.T) {
-	r := httptest.NewRequest("GET", "http:/test.com/?https://what.the.what", nil)
 	os.Setenv("ALLOWED_ORIGIN_REGEXP", "^https?:\\/\\/.*you\\.com")
-	myErr := validateRequest(r)
-	if myErr == nil {
-		t.Errorf("Error == nil, expected error")
+	tests := []struct {
+		title  string
+		method string
+		url    string
+		origin string
+		err    error
+		status int
+	}{
+		{
+			"Test missing origin header",
+			"GET",
+			"http:/test.com/?https://what.the.what",
+			"",
+			errMissingOrigin,
+			http.StatusBadRequest,
+		},
+		{
+			"Test missing query string",
+			"GET",
+			"http:/test.com/",
+			"https://you.com",
+			errMissingQuery,
+			http.StatusBadRequest,
+		},
+		{
+			"Test wrong VERB",
+			"POST",
+			"http:/test.com/?https://what.the.what",
+			"https://you.com",
+			errUnsupportedMethod,
+			http.StatusMethodNotAllowed,
+		},
+		{
+			"Test origin mismatch",
+			"GET",
+			"http:/test.com/?https://what.the.what",
+			"https://me.com",
+			errOriginMismatch,
+			http.StatusBadRequest,
+		},
+		{
+			"Test valid case",
+			"GET",
+			"http:/test.com/?https://what.the.what",
+			"https://you.com",
+			nil,
+			http.StatusOK,
+		},
 	}
-	if myErr.Error() != "Missing origin header" {
-		t.Errorf("Error == %s, expected error %s", myErr.Error(), "Missing origin header")
-	}
-	r = httptest.NewRequest("GET", "http:/test.com/", nil)
-	r.Header.Set("Origin", "https://you.com")
-	myErr = validateRequest(r)
-	if myErr == nil {
-		t.Errorf("Error == nil, expected error")
-	}
-	if myErr.Error() != "Missing request query" {
-		t.Errorf("Error == %s, expected error %s", myErr.Error(), "Missing origin header")
-	}
-	r = httptest.NewRequest("POST", "http:/test.com/?https://what.the.what", nil)
-	r.Header.Set("Origin", "https://you.com")
-	myErr = validateRequest(r)
-	if myErr == nil {
-		t.Errorf("Error == nil, expected error")
-	}
-	if myErr.Error() != "Cross domain request only supports GET" {
-		t.Errorf("Error == %s, expected error %s", myErr.Error(), "Missing origin header")
-	}
-	r = httptest.NewRequest("GET", "http:/test.com/?https://what.the.what", nil)
-	r.Header.Set("Origin", "https://me.com")
-	myErr = validateRequest(r)
-	if myErr == nil {
-		t.Errorf("Error == nil, expected error")
-	}
-	if myErr.Error() != "origin mismatch" {
-		t.Errorf("Error == %s, expected error %s", myErr.Error(), "Missing origin header")
-	}
-	r = httptest.NewRequest("GET", "http:/test.com/?https://what.the.what", nil)
-	r.Header.Set("Origin", "https://you.com")
-	myErr = validateRequest(r)
-	if myErr != nil {
-		t.Errorf("Error: %s, expected nil", myErr.Error())
+
+	for _, tt := range tests {
+		r := httptest.NewRequest(tt.method, tt.url, nil)
+		if tt.origin != "" {
+			r.Header.Set("Origin", tt.origin)
+		}
+		wantErr, wantStatus := tt.err, tt.status
+		if gotStatus, gotErr := validateRequest(r); gotErr != wantErr || gotStatus != wantStatus {
+			t.Errorf("%s:  got err %v, want err %v\ngot status %d, want status %d", tt.title, gotErr, wantErr, gotStatus, wantStatus)
+		}
 	}
 }
 
 func TestWriteCorsHeaders(t *testing.T) {
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("GET", "http:/test.com/?https://what.the.what", nil)
-	rsp := http.Response{ "200 OK", 200, "HTTP/1.1", 1, 1, http.Header{}, nil, -1, nil, true, true, nil, nil, nil, }
+	rsp := http.Response{"200 OK", 200, "HTTP/1.1", 1, 1, http.Header{}, nil, -1, nil, true, true, nil, nil, nil}
 	rsp.Header.Set("a", "b")
 	r.Header.Set("Origin", "you")
 	expectedHeaders := http.Header{}
