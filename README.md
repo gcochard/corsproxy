@@ -1,4 +1,4 @@
-cors-go
+corsproxy
 =======
 
 This project allows you to create an App Engine instance of a cross origin
