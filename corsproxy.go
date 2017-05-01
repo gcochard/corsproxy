@@ -6,7 +6,6 @@ import (
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/urlfetch"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"regexp"
@@ -90,7 +89,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, myerr.Error(), status)
 		return
 	}
-	log.Printf("URL: %s", r.URL.RawQuery)
 	ctx := appengine.NewContext(r)
 	resp, status, myerr := fetchResp(ctx, r.URL.RawQuery)
 	if myerr != nil {
